@@ -24,8 +24,8 @@ template< typename T >
 //inline string id( T x ) { return T2a( (unsigned long) x ); }
 inline string id( T x ) { return T2a( x ); }
 
-bool CDBG_IS_ON = true;	 // false - Turns off CDBG output ;  true - Turns on CDBG input
-bool PRINT_QUEUE_ON = false;
+bool CDBG_IS_ON = false;	 // false - Turns off CDBG output ;  true - Turns on CDBG input
+bool PRINT_QUEUE_ON = true; // false - turns off printing of the ready queue; true - turns on printing of ready queue
 #define cdbg if(CDBG_IS_ON) cerr << "\nLn " << __LINE__ << " of " << setw(8) << __FUNCTION__ << " by " << report() 
 
 #define EXCLUSION Sentry exclusion(this); exclusion.touch();
@@ -35,7 +35,7 @@ extern string Me();
 extern string report( );  
 
 
-// ====================== priority aueue ============================
+// ====================== priority queue ============================
 
 // pQueue behaves exactly like STL's queue, except that push has an
 // optional integer priority argument that defaults to INT_MAX.
@@ -205,7 +205,7 @@ class Thread {
   virtual void action() = 0;
   Semaphore go;
   static ThreadSafeMap<thread::id,Thread*> whoami;  
-  int pri;
+  int pri;  //the priority of the thread
 
   void suspend() { 
     cdbg << "Suspending thread \n";
@@ -235,6 +235,7 @@ public:
 
   virtual ~Thread() { 
     //pthread_cancel(pt);
+    //thread_cancel ()
   }
 
   Thread( string name = "", int priority = INT_MAX ) 
@@ -458,14 +459,19 @@ public:
   {
 	  int i = 1;
 	  pQueue<Thread*> readyCpy = ready;
-	  cerr << "Ready Queue: \n";
+	  cerr << "\nReady Queue: Size is " << ready.size() << "\n";
 	  Thread* it = NULL;
 	  for(it = readyCpy.front(); !readyCpy.empty(); it = readyCpy.front())
 	  {
 		  readyCpy.pop();
-		  cerr << i <<": \"" << Me() << "\"\n";  
-	  } 
+      //the name is not showing correctly
+		  cerr << i <<": \"" << it->name/*Me()*/ << "\", Priority = " << it->priority() <<"\n";  
+      i++;
+	  }
+    // just to make sure readyCpy is a shallow copy of ready queue
+    //cerr << "Size of ready_queue is still " << ready.size() << "\n";
   }
+  
   void defer( int pr = Thread::me()->priority() ) {
     EXCLUSION
     if ( ready.empty() ) return;
